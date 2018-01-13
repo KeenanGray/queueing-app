@@ -41,10 +41,10 @@ func main() {
 	router.Use(gin.Logger())
 	//router.Use(gin.ErrorLogger())
 
-	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Static("/static", "static")
 
 	router.GET("/", func(c *gin.Context) {
+		router.LoadHTMLGlob("templates/*.tmpl.html")		
 		c.HTML(http.StatusOK, "index.tmpl.html", nil)
 	})
 
