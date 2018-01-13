@@ -89,6 +89,13 @@ func main() {
 		c.HTML(http.StatusOK, "index.tmpl.html", nil)
 	})
 
+	router.POST("/remake", func(c *gin.Context){
+		fmt.Println("/tmp/host_page"+getCookieValue(c)+".tmpl.html")
+		os.Remove("tmp/host_page"+getCookieValue(c)+".tmpl.html")
+		assignCookie("",c)
+		c.Redirect(302, "/hostgame")
+	})
+
 	router.Run(":" + port)
 }
 
