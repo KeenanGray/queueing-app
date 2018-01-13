@@ -20,6 +20,17 @@ import (
 func main() {
 	lobbymanager.GetInstance()
 
+	//Cleanup the host folder
+	os.RemoveAll("templates/hosts/")
+	os.MkdirAll("templates/hosts/",644)
+	
+	//Spin up a null file in the host directory
+	var webpage bytes.Buffer
+	var OutputFile = "templates/hosts/nullHost.tmpl.html"
+	d1 := webpage.Bytes()
+	err := ioutil.WriteFile(OutputFile, d1, 0644)
+	check(err)
+
 	port := os.Getenv("PORT")
 
 	if port == "" {
@@ -28,6 +39,8 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger())
+	//router.Use(gin.ErrorLogger())
+
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Static("/static", "static")
 
@@ -36,61 +49,39 @@ func main() {
 	})
 
 	router.GET("/hostgame", func(c *gin.Context) {
-
 		//If host already has a cookie
 		//Serve the old lobby page
-		val, err := c.Request.Cookie("roomcode")
+		
+		//Load in host pages
+		router.LoadHTMLGlob("templates/hosts/*.tmpl.html")
 
-		if err != nil {
-			fmt.Println("error in cookie request")
-		}
+		roomCode := getCookieValue(c)
+		if roomCode != "" {
+			fmt.Println("User has cookie " + roomCode)
 
-		if val != nil {
-			fmt.Println("User has cookie " + val.Value)
-
-			defer func() {
-				fmt.Println("defering")
-				l := createNewLobbyandPage()
-
-				//Give that user a cookie for this lobby
-				expiration := time.Now().Add(365 * 24 * time.Hour)
-				cookie := http.Cookie{Name: "roomcode", Value: l.Code, Expires: expiration}
-				http.SetCookie(c.Writer, &cookie)
-
-				if r := recover(); r != nil {
-					fmt.Println("Recovered in f", r)
-				}
-
-			}()
-
-			//serve webpage based on cookie
 			//check webpage is in the map
 			//	if lobbymanager.GetInstance().Contains(val.Value) {
-			fmt.Println("Serving page " + val.Value)
 
-			if _, err := os.Stat("host_page" + val.Value + ".tmpl.html"); os.IsNotExist(err) {
-				fmt.Println("Panicking!")
-				panic(createNewLobbyandPage())
+			//check that a webpage exists for this lobby
+			code := getCookieValue(c)
+			c.HTML(http.StatusOK, "host_page"+code+".tmpl.html", nil)
+
+			if c.Errors != nil {
+				fmt.Println("uhoh")
+				fixMissingPage(c)
+				c.Errors = nil
+			} else {
+				fmt.Println("Path FOUND")
+				return
+				//Serve the original page
 			}
 
-			c.HTML(http.StatusOK, "host_page"+val.Value+".tmpl.html", nil)
-
-			return
-			//	}
+		} else {
+			//User does not have a cookie, create a new page
+			fmt.Println("User no cookie")
+			fixMissingPage(c)
 		}
 
-		/*
-			//otherwise, create a new lobby
-			l := createNewLobbyandPage()
-
-			//Give that user a cookie for this lobby
-			expiration := time.Now().Add(365 * 24 * time.Hour)
-			cookie := http.Cookie{Name: "roomcode", Value: l.Code, Expires: expiration}
-			http.SetCookie(c.Writer, &cookie)
-
-			router.LoadHTMLGlob("templates/hosts/*.tmpl.html")
-			c.HTML(http.StatusOK, "host_page"+l.Code+".tmpl.html", nil)
-		*/
 		return
 	})
 
@@ -101,10 +92,28 @@ func main() {
 	router.Run(":" + port)
 }
 
+func assignCookie(code string, c *gin.Context) {
+	//Give that user a new cookie for the replacement page
+	expiration := time.Now().Add(365 * 24 * time.Hour)
+	cookie := http.Cookie{Name: "roomcode", Value: code, Expires: expiration}
+	http.SetCookie(c.Writer, &cookie)
+}
+
+func fixMissingPage(c *gin.Context) {
+	l := createNewLobbyandPage()
+	assignCookie(l.Code, c)
+
+	fmt.Println("Created page " + l.Code)
+
+	//serve the page
+	c.HTML(http.StatusOK, "host_page"+l.Code+".tmpl.html", nil)
+}
+
 func createNewLobbyandPage() *lobbymanager.Lobby {
 	l := lobbymanager.GenerateLobby()
 	GetHostPage(*l)
 	lobbymanager.GetInstance().AddLobby(l)
+
 	return l
 }
 
@@ -112,6 +121,16 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func getCookieValue(c *gin.Context) string {
+	//Get value of cookie
+	myCookie, err := c.Request.Cookie("roomcode")
+	if err != nil {
+		return ""
+	}
+
+	return myCookie.Value
 }
 
 func GetHostPage(l lobbymanager.Lobby) {
