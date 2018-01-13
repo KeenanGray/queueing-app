@@ -21,12 +21,12 @@ func main() {
 	lobbymanager.GetInstance()
 
 	//Cleanup the host folder
-	os.RemoveAll("templates/hosts/")
-	os.MkdirAll("templates/hosts/",777)
+	os.RemoveAll("tmp/hosts/")
+	os.MkdirAll("tmp/hosts/",777)
 	
 	//Spin up a null file in the host directory
 	var webpage bytes.Buffer
-	var OutputFile = "templates/hosts/nullHost.tmpl.html"
+	var OutputFile = "tmp/hosts/nullHost.tmpl.html"
 	d1 := webpage.Bytes()
 	err := ioutil.WriteFile(OutputFile, d1, 0644)
 	check(err)
@@ -53,7 +53,7 @@ func main() {
 		//Serve the old lobby page
 		
 		//Load in host pages
-		router.LoadHTMLGlob("templates/hosts/*.tmpl.html")
+		router.LoadHTMLGlob("tmp/hosts/*.tmpl.html")
 
 		roomCode := getCookieValue(c)
 		if roomCode != "" {
@@ -144,7 +144,7 @@ func GetHostPage(l lobbymanager.Lobby) {
 		log.Println("executing template:", err)
 	}
 
-	var OutputFile = "templates/hosts/host_page" + l.Code + ".tmpl.html"
+	var OutputFile = "tmp/hosts/host_page" + l.Code + ".tmpl.html"
 	d1 := webpage.Bytes()
 	err = ioutil.WriteFile(OutputFile, d1, 0644)
 	check(err)
