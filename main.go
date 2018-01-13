@@ -21,12 +21,12 @@ func main() {
 	lobbymanager.GetInstance()
 
 	//Cleanup the host folder
-	os.RemoveAll("tmp/")
-	os.MkdirAll("tmp/",777)
+	os.RemoveAll("/tmp/")
+	os.MkdirAll("/tmp/",777)
 	
 	//Spin up a null file in the host directory
 	var webpage bytes.Buffer
-	var OutputFile = "tmp/nullHost.tmpl.html"
+	var OutputFile = "/tmp/nullHost.tmpl.html"
 	d1 := webpage.Bytes()
 	err := ioutil.WriteFile(OutputFile, d1, 0644)
 	check(err)
