@@ -22,7 +22,7 @@ func main() {
 
 	//Cleanup the host folder
 	os.RemoveAll("templates/hosts/")
-	os.MkdirAll("templates/hosts/",644)
+	os.MkdirAll("templates/hosts/",777)
 	
 	//Spin up a null file in the host directory
 	var webpage bytes.Buffer
