@@ -13,14 +13,14 @@ import (
 //Lobby is a list of players currently in a game
 type Lobby struct {
 	Users []string
-	Code  string
+	Code string
 }
 
 /*GenerateLobby creates a new lobby with an empty list of Users and unique lobby Code
 
  */
 func GenerateLobby() *Lobby {
-	l := Lobby{Users: make([]string, 3), Code: createLobbyCode()}
+	l := Lobby{Users: make([]string, 0), Code: createLobbyCode()}
 
 	return &l
 }
@@ -30,11 +30,15 @@ PrintLobby prints the information fields of the structure for debugging
 */
 func (lob_Instance *Lobby) PrintLobby() {
 	fmt.Println(lob_Instance.Code)
+
+	for _, i := range lob_Instance.Users{
+		fmt.Println("User " + i + " ")	
+	}
 }
 
-func (lob_Instance *Lobby) addUser(name string) int {
-	fmt.Println(name)
-	return 0
+func (lob_Instance *Lobby) AddUser(name string) int {
+	lob_Instance.Users = append(lob_Instance.Users, name)
+	return len(lob_Instance.Users)
 }
 
 /*

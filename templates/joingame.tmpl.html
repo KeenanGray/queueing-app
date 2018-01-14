@@ -1,0 +1,22 @@
+<html>
+{{template "header.tmpl.html"}}
+
+<body>
+    {{template "nav.tmpl.html"}}
+
+    <div class="jumbotron text-center">
+        <h1>Enter 4 digit code to join game</h1>
+
+        <form action="/join" method="post">
+            Name:<input type="text" name="name">
+            Code:<input type="text" name="code">           
+            <input type="submit" value="join queue">
+        </form>
+
+    </div>
+
+    {{template "footer.tmpl.html"}}
+    </div>
+</body>
+
+</html>

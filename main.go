@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -13,23 +10,18 @@ import (
 
 	"fmt"
 	"queueing-app/lobbymanager"
+	"strings"
 
 	"time"
 )
 
-func main() {
-	lobbymanager.GetInstance()
+type User struct {
+	Name string
+	Pos  int
+}
 
-	//Cleanup the host folder
-	os.RemoveAll("/tmp/")
-	os.MkdirAll("/tmp/",777)
-	
-	//Spin up a null file in the host directory
-	var webpage bytes.Buffer
-	var OutputFile = "/tmp/nullHost.tmpl.html"
-	d1 := webpage.Bytes()
-	err := ioutil.WriteFile(OutputFile, d1, 0644)
-	check(err)
+func main() {
+	lobbymanager.GetInstance().Init()
 
 	port := os.Getenv("PORT")
 
@@ -40,99 +32,107 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	//router.Use(gin.ErrorLogger())
+	router.LoadHTMLGlob("templates/*.tmpl.html")
 
 	router.Static("/static", "static")
 
 	router.GET("/", func(c *gin.Context) {
-		router.LoadHTMLGlob("templates/*.tmpl.html")		
+		router.LoadHTMLGlob("templates/*.tmpl.html")
 		c.HTML(http.StatusOK, "index.tmpl.html", nil)
 	})
 
 	router.GET("/hostgame", func(c *gin.Context) {
-		//If host already has a cookie
-		//Serve the old lobby page
-		
-		//Load in host pages
-		router.LoadHTMLGlob("tmp/*.tmpl.html")
-
-		roomCode := getCookieValue(c)
+		//Get the hosts cookie
+		roomCode := getCookieValue("HostInfo", c)
 		if roomCode != "" {
+			//If host already has a cookie
+			//Serve the lobby page with is cookie
 			fmt.Println("User has cookie " + roomCode)
 
-			//check webpage is in the map
-			//	if lobbymanager.GetInstance().Contains(val.Value) {
-
-			//check that a webpage exists for this lobby
-			code := getCookieValue(c)
-			c.HTML(http.StatusOK, "host_page"+code+".tmpl.html", nil)
-
-			if c.Errors != nil {
-				fmt.Println("uhoh")
-				fixMissingPage(c)
-				c.Errors = nil
-			} else {
-				fmt.Println("Path FOUND")
+			code := getCookieValue("HostInfo", c)
+			l := lobbymanager.GetInstance().LobbyMap[code]
+			if l != nil {
+				c.HTML(http.StatusOK, "host_page.tmpl.html", l)
 				return
-				//Serve the original page
+			} else {
 			}
-
-		} else {
-			//User does not have a cookie, create a new page
-			fmt.Println("User no cookie")
-			fixMissingPage(c)
 		}
+		//User does not have a cookie, create a new page
+		fmt.Println("User no cookie")
+		createNewLobbyandAssign(c)
 
+		c.Redirect(302, "/hostgame")
 		return
 	})
 
 	router.GET("/joingame", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl.html", nil)
+		c.HTML(http.StatusOK, "joingame.tmpl.html", nil)
 	})
 
-	router.POST("/remake", func(c *gin.Context){
-		fmt.Println("/tmp/host_page"+getCookieValue(c)+".tmpl.html")
-		os.Remove("tmp/host_page"+getCookieValue(c)+".tmpl.html")
-		assignCookie("",c)
+	router.GET("/ingame", func(c *gin.Context) {
+		UserInfo := getCookieValue("UserInfo", c)
+		if UserInfo != "" {
+			fmt.Println("User has cookie " + UserInfo)
+			UserName := strings.Split(UserInfo, ",")[0]
+			RoomCode := strings.Split(UserInfo, ",")[1]
+
+			c.HTML(http.StatusOK, "client_page.tmpl.html", User{UserName, lobbymanager.GetInstance().GetPositionInLobby(RoomCode, UserName)})
+
+		} else {
+			//User does not have a cookie, create a new page
+			fmt.Println("User no cookie")
+			c.HTML(http.StatusOK, "joingame.tmpl.html", nil)
+		}
+		return
+	})
+
+	router.POST("/join", func(c *gin.Context) {
+		joincode := strings.ToUpper(c.Request.FormValue("code"))
+		joinname := strings.ToUpper(c.Request.FormValue("name"))
+
+		fmt.Println("Join code is " + joincode)
+
+		if lobbymanager.GetInstance().Contains(joincode) {
+			lobbymanager.GetInstance().AddUser(joincode, joinname)
+			assignUserCookie(joinname+","+joincode, c)
+			c.Redirect(302, "/ingame")
+
+		} else {
+			c.Redirect(302, "/joingame")
+		}
+	})
+
+	router.POST("/remake", func(c *gin.Context) {
+		//print lobbies for debugging
+		lobbymanager.GetInstance().PrintLobbies()
+		//remove current host from map
+		removeCodeFromMap(getCookieValue("HostInfo", c))
+		//reassign the host cookie to null
+		assignHostCookie("", c)
+		//refresh the hostgame page
 		c.Redirect(302, "/hostgame")
 	})
 
 	router.Run(":" + port)
 }
 
-func assignCookie(code string, c *gin.Context) {
+func assignHostCookie(code string, c *gin.Context) {
 	//Give that user a new cookie for the replacement page
 	expiration := time.Now().Add(365 * 24 * time.Hour)
-	cookie := http.Cookie{Name: "roomcode", Value: code, Expires: expiration}
+	cookie := http.Cookie{Name: "HostInfo", Value: code, Expires: expiration}
 	http.SetCookie(c.Writer, &cookie)
 }
 
-func fixMissingPage(c *gin.Context) {
-	l := createNewLobbyandPage()
-	assignCookie(l.Code, c)
-
-	fmt.Println("Created page " + l.Code)
-
-	//serve the page
-	c.HTML(http.StatusOK, "host_page"+l.Code+".tmpl.html", nil)
+func assignUserCookie(UserInfo string, c *gin.Context) {
+	//Give that user a new cookie for the replacement page
+	expiration := time.Now().Add(365 * 24 * time.Hour)
+	cookie := http.Cookie{Name: "UserInfo", Value: UserInfo, Expires: expiration}
+	http.SetCookie(c.Writer, &cookie)
 }
 
-func createNewLobbyandPage() *lobbymanager.Lobby {
-	l := lobbymanager.GenerateLobby()
-	GetHostPage(*l)
-	lobbymanager.GetInstance().AddLobby(l)
-
-	return l
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-func getCookieValue(c *gin.Context) string {
+func getCookieValue(cookieName string, c *gin.Context) string {
 	//Get value of cookie
-	myCookie, err := c.Request.Cookie("roomcode")
+	myCookie, err := c.Request.Cookie(cookieName)
 	if err != nil {
 		return ""
 	}
@@ -140,19 +140,21 @@ func getCookieValue(c *gin.Context) string {
 	return myCookie.Value
 }
 
-func GetHostPage(l lobbymanager.Lobby) {
-	// Create a new template and parse the letter into it.
-	t := template.Must(template.New("host_page_template.tmpl").ParseFiles("templates/host_page_template.tmpl"))
+func createNewLobbyandAssign(c *gin.Context) *lobbymanager.Lobby {
+	l := lobbymanager.GenerateLobby()
+	lobbymanager.GetInstance().AddLobby(l)
 
-	var webpage bytes.Buffer
+	assignHostCookie(l.Code, c)
 
-	err := t.Execute(&webpage, l)
-	if err != nil {
-		log.Println("executing template:", err)
+	return l
+}
+
+func removeCodeFromMap(code string){
+	lobbymanager.GetInstance().RemoveLobby(code)
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
 	}
-
-	var OutputFile = "tmp/host_page" + l.Code + ".tmpl.html"
-	d1 := webpage.Bytes()
-	err = ioutil.WriteFile(OutputFile, d1, 0644)
-	check(err)
 }

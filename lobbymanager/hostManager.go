@@ -7,6 +7,8 @@ Marcia Castilho http://marcio.io/2015/07/singleton-pattern-in-go/""
 
 import (
 	"sync"
+	"log"
+	"fmt"
 )
 
 /*HostManager holds the map of room codes to lobby objects*/
@@ -25,12 +27,37 @@ func GetInstance() *HostManager {
 	return instance
 }
 
-func (hm *HostManager) AddLobby(l *Lobby) {
+func (hm *HostManager) Init(){
 	if hm.LobbyMap == nil {
 		hm.LobbyMap = make(map[string]*Lobby)
 	}
-	hm.LobbyMap[l.Code] = l
+}
 
+func (hm *HostManager) PrintLobbies(){
+	fmt.Println("Printing  Lobbies")
+	for key, value := range hm.LobbyMap {
+		fmt.Println("Key:", key, "Value:", value)
+	}
+}
+
+func (hm *HostManager) AddLobby(l *Lobby) {
+	hm.LobbyMap[l.Code] = l
+}
+
+func (hm *HostManager) RemoveLobby(code string) {
+	if hm.LobbyMap==nil {
+		log.Fatal("No lobbies in being monitored by Host Manager")
+	}
+	delete(hm.LobbyMap,code)
+}
+
+func (hm *HostManager) AddUser(code string, name string) {
+	if hm.LobbyMap == nil {
+		log.Fatal("No game with this code exists")
+	}
+	hm.LobbyMap[code].AddUser(name)
+	
+	hm.LobbyMap[code].PrintLobby()
 }
 
 func (hm *HostManager) Contains(code string) bool {
@@ -44,4 +71,8 @@ func (hm *HostManager) Contains(code string) bool {
 		return true
 	}
 
+}
+
+func (hm *HostManager) GetPositionInLobby(code string, name string) int {
+	return 5
 }
