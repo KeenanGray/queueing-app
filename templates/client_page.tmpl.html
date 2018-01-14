@@ -1,15 +1,33 @@
 <html>
-    {{template "header.tmpl.html"}}
-    <title>Cue-Up - In Lobby</title>
+       <head>
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+                <script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+                <script type="text/javascript" src="/static/javascript/push.min.js"></script>
+                <script type="text/javascript" src="/static/javascript/serviceworker.min.js"></script>
+                <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
+                <link rel="stylesheet" type="text/css" href="/static/css/main.css" />
+              
+                <meta http-equiv="refresh" content="1" />
+                
+              </head><title>Cue-Up - In Lobby</title>
     
     <body>
         {{template "nav.tmpl.html"}}
-    
+        
+    {{if ne .Pos -1}} 
         <div class="jumbotron text-center">
             <h1>Hello {{.Name}} You have successfully joined the queue, please wait to be notified of your turn</h1>
             <h2>You are number {{.Pos}} in the queue</h2>
         </div>
-    
+    {{end}}
+
+    {{if eq .Pos -1}}    
+    <div class="jumbotron text-center">
+        <h1>Hello {{.Name}} You have been notified, It's your turn. Hurry to your event.</h1>
+        <script>Push.create('Hello World!')
+            </script>
+        {{end}}
+    </div>
         <form action="/leave" method="post">
             <input type="submit" value="leave queue">
 
