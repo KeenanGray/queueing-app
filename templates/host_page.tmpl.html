@@ -1,21 +1,28 @@
 <html>
-    {{template "header.tmpl.html"}}
-    
-    <body>
-        {{template "nav.tmpl.html"}}
+{{template "header.tmpl.html"}}
+<title>Cue-Up - {{.Code}}</title>
 
-<div class = "section_container">
-    <hr>
-      <h2  class="section_title">Your Unique Lobby</h2>
-              <p>
-                  Here is your lobby code, users should enter it to join the Queue
-              </p>
-      
-      <h4>{{.Code}}</h4>
-      
-      <h4>{{.Users}}</h4>
-      <hr>
+<body>
+    {{template "nav.tmpl.html"}}
 
-      <form action="/remake" method="post">
-          <input type="submit" value="remake queue">
-</div>
+    <div class="section_container">
+        <hr>
+        <h2 class="section_title">Your Unique Lobby</h2>
+        <p>
+            Here is your lobby code, users should enter it to join the Queue
+        </p>
+
+        <h4>{{.Code}}</h4>
+
+        <h4>{{if .LastNotified}}Last Notified {{.LastNotified}} {{end}}</h4>
+        <h4>{{.Users}}</h4>
+        <hr>
+
+        <form action="/hostgame" method="post">
+            <input type="submit" value="remake queue">
+        </form>
+        <form action="/notify" method="post">
+            <input type="submit" value="Notify Next">
+        </form>
+
+    </div>

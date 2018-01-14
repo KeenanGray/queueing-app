@@ -1,13 +1,15 @@
 <html>
 {{template "header.tmpl.html"}}
+<title>Cue-Up - join</title>
 
 <body>
     {{template "nav.tmpl.html"}}
 
     <div class="jumbotron text-center">
         <h1>Enter 4 digit code to join game</h1>
+        <p> <b>Note :</b> Names will be converted to UPPERCASE and must be <b>UNIQUE</b> or the app may not work properly</p>
 
-        <form action="/join" method="post">
+        <form action="/joingame" method="post">
             Name:<input type="text" name="name">
             Code:<input type="text" name="code">           
             <input type="submit" value="join queue">

@@ -61,8 +61,38 @@ func main() {
 		return
 	})
 
+	router.POST("/hostgame", func(c *gin.Context) {
+		//remove current host from map
+		removeCodeFromMap(getCookieValue("HostInfo", c))
+		//reassign the host cookie to null
+		assignHostCookie("", c)
+		//refresh the hostgame page
+		c.Redirect(302, "/hostgame")
+	})
+
+	router.POST("/notify", func(c *gin.Context){
+		RoomCode:=getCookieValue("HostInfo",c)
+		lobbymanager.GetInstance().NotifyNextInQueue(RoomCode)
+
+		c.Redirect(302, "/hostgame")
+	})
+
 	router.GET("/joingame", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "joingame.tmpl.html", nil)
+	})	
+	router.POST("/joingame", func(c *gin.Context) {
+		joincode := strings.ToUpper(c.Request.FormValue("code"))
+		joinname := strings.ToUpper(c.Request.FormValue("name"))
+
+		if lobbymanager.GetInstance().Contains(joincode) {
+			//else create a new user
+			lobbymanager.GetInstance().AddUser(joincode, lobbymanager.User{Name: joinname})
+			assignUserCookie(joinname+","+joincode, c)
+			c.Redirect(302, "/ingame")		
+		} else {
+			c.Redirect(302, "/joingame")
+			return
+		}
 	})
 
 	router.GET("/ingame", func(c *gin.Context) {
@@ -81,21 +111,6 @@ func main() {
 		return
 	})
 
-	router.POST("/join", func(c *gin.Context) {
-		joincode := strings.ToUpper(c.Request.FormValue("code"))
-		joinname := strings.ToUpper(c.Request.FormValue("name"))
-
-		if lobbymanager.GetInstance().Contains(joincode) {
-			//else create a new user
-			lobbymanager.GetInstance().AddUser(joincode, lobbymanager.User{Name: joinname})
-			assignUserCookie(joinname+","+joincode, c)
-			c.Redirect(302, "/ingame")		
-		} else {
-			c.Redirect(302, "/joingame")
-			return
-		}
-	})
-
 	router.POST("/leave", func(c *gin.Context) {
 		UserInfo := getCookieValue("UserInfo", c)
 		if UserInfo != "" {
@@ -109,13 +124,11 @@ func main() {
 		c.Redirect(302, "/")
 	})
 
-	router.POST("/remake", func(c *gin.Context) {
-		//remove current host from map
-		removeCodeFromMap(getCookieValue("HostInfo", c))
-		//reassign the host cookie to null
-		assignHostCookie("", c)
-		//refresh the hostgame page
-		c.Redirect(302, "/hostgame")
+	router.GET("/reset", func(c *gin.Context){
+		//resets cookies and returns to home page
+		assignHostCookie("",c)
+		assignUserCookie("",c)
+		c.Redirect(302, "/")
 	})
 
 	router.Run(":" + port)

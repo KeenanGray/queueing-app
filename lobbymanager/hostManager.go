@@ -83,3 +83,7 @@ func (hm *HostManager) Contains(code string) bool {
 func (hm *HostManager) GetPositionInLobby(code string, name string) int {
 	return hm.LobbyMap[code].GetUserPosition(name)	 
 }
+
+func (hm *HostManager) NotifyNextInQueue(code string){
+	hm.LobbyMap[code].NotifyUser()
+}

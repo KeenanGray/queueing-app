@@ -11,11 +11,12 @@ import (
 
 //Lobby is a list of players currently in a game
 type Lobby struct {
-	Users []User
-	Code  string
+	Users        []User
+	Code         string
+	LastNotified string
 }
 
-type User struct{
+type User struct {
 	Name string
 }
 
@@ -55,7 +56,7 @@ func (lob_Instance *Lobby) AddUser(user User) {
 func (lob_Instance *Lobby) RemoveUser(name string) {
 	for i, ele := range lob_Instance.Users {
 		if ele.Name == name {
-			lob_Instance.Users= append(lob_Instance.Users[:i], lob_Instance.Users[i+1:]...)			
+			lob_Instance.Users = append(lob_Instance.Users[:i], lob_Instance.Users[i+1:]...)
 		}
 	}
 }
@@ -66,6 +67,7 @@ func (lob_Instance *Lobby) GetUserPosition(name string) int {
 			return i + 1
 		}
 	}
+
 	return -1
 
 }
@@ -96,4 +98,13 @@ func createLobbyCode() string {
 
 func toChar(i int) rune {
 	return rune('A' + i)
+}
+
+func (lob_Instance *Lobby) NotifyUser() {
+	if len(lob_Instance.Users) > 0 {
+		lob_Instance.LastNotified = lob_Instance.Users[0].Name
+
+		//remove the first user from the lobby
+		lob_Instance.RemoveUser(lob_Instance.Users[0].Name)
+	}
 }
