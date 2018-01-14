@@ -14,9 +14,10 @@ import (
 	"time"
 )
 
-type User struct {
+type QueueInfo struct {
 	Name string
 	Pos  int
+	Time string
 }
 
 func main() {
@@ -70,8 +71,9 @@ func main() {
 		c.Redirect(302, "/hostgame")
 	})
 
-	router.POST("/notify", func(c *gin.Context){
-		RoomCode:=getCookieValue("HostInfo",c)
+	router.POST("/notify", func(c *gin.Context) {
+		RoomCode := getCookieValue("HostInfo", c)
+
 		lobbymanager.GetInstance().NotifyNextInQueue(RoomCode)
 
 		c.Redirect(302, "/hostgame")
@@ -79,7 +81,7 @@ func main() {
 
 	router.GET("/joingame", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "joingame.tmpl.html", nil)
-	})	
+	})
 	router.POST("/joingame", func(c *gin.Context) {
 		joincode := strings.ToUpper(c.Request.FormValue("code"))
 		joinname := strings.ToUpper(c.Request.FormValue("name"))
@@ -88,7 +90,7 @@ func main() {
 			//else create a new user
 			lobbymanager.GetInstance().AddUser(joincode, lobbymanager.User{Name: joinname})
 			assignUserCookie(joinname+","+joincode, c)
-			c.Redirect(302, "/ingame")		
+			c.Redirect(302, "/ingame")
 		} else {
 			c.Redirect(302, "/joingame")
 			return
@@ -100,10 +102,11 @@ func main() {
 		UserInfo := getCookieValue("UserInfo", c)
 		UserName := strings.Split(UserInfo, ",")[0]
 		RoomCode := strings.Split(UserInfo, ",")[1]
-
+		NotificationTime := lobbymanager.GetInstance().LobbyMap[RoomCode].LastNotifiedTime
 		//check that lobby exists in manager
 		if lobbymanager.GetInstance().Contains(RoomCode) {
-			c.HTML(http.StatusOK, "client_page.tmpl.html", User{UserName, lobbymanager.GetInstance().GetPositionInLobby(RoomCode, UserName)})
+			c.HTML(http.StatusOK, "client_page.tmpl.html",
+				QueueInfo{UserName, lobbymanager.GetInstance().GetPositionInLobby(RoomCode, UserName), NotificationTime})
 		} else {
 			c.Redirect(302, "/joingame")
 		}
@@ -124,10 +127,10 @@ func main() {
 		c.Redirect(302, "/")
 	})
 
-	router.GET("/reset", func(c *gin.Context){
+	router.GET("/reset", func(c *gin.Context) {
 		//resets cookies and returns to home page
-		assignHostCookie("",c)
-		assignUserCookie("",c)
+		assignHostCookie("", c)
+		assignUserCookie("", c)
 		c.Redirect(302, "/")
 	})
 
