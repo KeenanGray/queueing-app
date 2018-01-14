@@ -104,8 +104,9 @@ func toChar(i int) rune {
 func (lob_Instance *Lobby) NotifyUser() {
 	if len(lob_Instance.Users) > 0 {
 		lob_Instance.LastNotified = lob_Instance.Users[0].Name
+
 		//time format string must use Mon Jan 2 15:04:05 MST 2006
-		lob_Instance.LastNotifiedTime = time.Now().Format("Mon 03:04 PM")
+		lob_Instance.LastNotifiedTime = time.Now().Format("Mon 03:04 PM EST")
 		//remove the first user from the lobby
 		lob_Instance.RemoveUser(lob_Instance.Users[0].Name)
 	}
