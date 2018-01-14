@@ -6,21 +6,24 @@ import (
 	"os"
 	"text/tabwriter"
 	"time"
-
 	//"strconv"
 )
 
 //Lobby is a list of players currently in a game
 type Lobby struct {
-	Users []string
-	Code string
+	Users []User
+	Code  string
+}
+
+type User struct{
+	Name string
 }
 
 /*GenerateLobby creates a new lobby with an empty list of Users and unique lobby Code
 
  */
 func GenerateLobby() *Lobby {
-	l := Lobby{Users: make([]string, 0), Code: createLobbyCode()}
+	l := Lobby{Users: make([]User, 0), Code: createLobbyCode()}
 
 	return &l
 }
@@ -29,16 +32,42 @@ func GenerateLobby() *Lobby {
 PrintLobby prints the information fields of the structure for debugging
 */
 func (lob_Instance *Lobby) PrintLobby() {
-	fmt.Println(lob_Instance.Code)
+	fmt.Println("Lobby Code" + lob_Instance.Code)
 
-	for _, i := range lob_Instance.Users{
-		fmt.Println("User " + i + " ")	
+	for _, i := range lob_Instance.Users {
+		fmt.Println("User " + i.Name + " ")
 	}
 }
 
-func (lob_Instance *Lobby) AddUser(name string) int {
-	lob_Instance.Users = append(lob_Instance.Users, name)
-	return len(lob_Instance.Users)
+func (lob_Instance *Lobby) AddUser(user User) {
+	doAppend := true
+	for _, ele := range lob_Instance.Users {
+		if ele.Name == user.Name {
+			doAppend = false
+			break
+		}
+	}
+	if doAppend {
+		lob_Instance.Users = append(lob_Instance.Users, user)
+	}
+}
+
+func (lob_Instance *Lobby) RemoveUser(name string) {
+	for i, ele := range lob_Instance.Users {
+		if ele.Name == name {
+			lob_Instance.Users= append(lob_Instance.Users[:i], lob_Instance.Users[i+1:]...)			
+		}
+	}
+}
+
+func (lob_Instance *Lobby) GetUserPosition(name string) int {
+	for i, s := range lob_Instance.Users {
+		if s.Name == name {
+			return i + 1
+		}
+	}
+	return -1
+
 }
 
 /*
@@ -55,9 +84,9 @@ func createLobbyCode() string {
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	defer w.Flush()
 
-	code:=""
+	code := ""
 
-	rands := []int{r.Intn(25),r.Intn(25),r.Intn(25),r.Intn(25)}
+	rands := []int{r.Intn(25), r.Intn(25), r.Intn(25), r.Intn(25)}
 
 	for _, i := range rands {
 		code = code + string(toChar(i))

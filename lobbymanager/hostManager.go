@@ -14,6 +14,7 @@ import (
 /*HostManager holds the map of room codes to lobby objects*/
 type HostManager struct {
 	LobbyMap map[string]*Lobby
+	currentUID int
 }
 
 var instance *HostManager
@@ -31,6 +32,7 @@ func (hm *HostManager) Init(){
 	if hm.LobbyMap == nil {
 		hm.LobbyMap = make(map[string]*Lobby)
 	}
+	hm.currentUID=0;
 }
 
 func (hm *HostManager) PrintLobbies(){
@@ -51,14 +53,19 @@ func (hm *HostManager) RemoveLobby(code string) {
 	delete(hm.LobbyMap,code)
 }
 
-func (hm *HostManager) AddUser(code string, name string) {
+func (hm *HostManager) AddUser(code string, user User) {
 	if hm.LobbyMap == nil {
 		log.Fatal("No game with this code exists")
 	}
-	hm.LobbyMap[code].AddUser(name)
-	
-	hm.LobbyMap[code].PrintLobby()
-}
+	hm.LobbyMap[code].AddUser(user)
+	}
+
+func (hm *HostManager) RemoveUser(code string, name string) {
+	if hm.LobbyMap == nil {
+		log.Fatal("No game with this code exists")
+	}
+	hm.LobbyMap[code].RemoveUser(name)
+	}
 
 func (hm *HostManager) Contains(code string) bool {
 	if hm.LobbyMap == nil {
@@ -74,5 +81,5 @@ func (hm *HostManager) Contains(code string) bool {
 }
 
 func (hm *HostManager) GetPositionInLobby(code string, name string) int {
-	return 5
+	return hm.LobbyMap[code].GetUserPosition(name)	 
 }

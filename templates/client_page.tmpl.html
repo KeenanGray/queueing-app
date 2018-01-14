@@ -6,11 +6,13 @@
     
         <div class="jumbotron text-center">
             <h1>Hello {{.Name}} You have successfully joined the queue, please wait to be notified of your turn</h1>
-            <h2>You number {{.Pos}} in the queue</h2>
+            <h2>You are number {{.Pos}} in the queue</h2>
         </div>
     
+        <form action="/leave" method="post">
+            <input type="submit" value="leave queue">
+
         {{template "footer.tmpl.html"}}
         </div>
     </body>
-    
     </html>

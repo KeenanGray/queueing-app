@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/heroku/x/hmetrics/onload"
 
-	"fmt"
 	"queueing-app/lobbymanager"
 	"strings"
 
@@ -47,8 +46,6 @@ func main() {
 		if roomCode != "" {
 			//If host already has a cookie
 			//Serve the lobby page with is cookie
-			fmt.Println("User has cookie " + roomCode)
-
 			code := getCookieValue("HostInfo", c)
 			l := lobbymanager.GetInstance().LobbyMap[code]
 			if l != nil {
@@ -58,7 +55,6 @@ func main() {
 			}
 		}
 		//User does not have a cookie, create a new page
-		fmt.Println("User no cookie")
 		createNewLobbyandAssign(c)
 
 		c.Redirect(302, "/hostgame")
@@ -70,19 +66,18 @@ func main() {
 	})
 
 	router.GET("/ingame", func(c *gin.Context) {
+		//get user info
 		UserInfo := getCookieValue("UserInfo", c)
-		if UserInfo != "" {
-			fmt.Println("User has cookie " + UserInfo)
-			UserName := strings.Split(UserInfo, ",")[0]
-			RoomCode := strings.Split(UserInfo, ",")[1]
+		UserName := strings.Split(UserInfo, ",")[0]
+		RoomCode := strings.Split(UserInfo, ",")[1]
 
+		//check that lobby exists in manager
+		if lobbymanager.GetInstance().Contains(RoomCode) {
 			c.HTML(http.StatusOK, "client_page.tmpl.html", User{UserName, lobbymanager.GetInstance().GetPositionInLobby(RoomCode, UserName)})
-
 		} else {
-			//User does not have a cookie, create a new page
-			fmt.Println("User no cookie")
-			c.HTML(http.StatusOK, "joingame.tmpl.html", nil)
+			c.Redirect(302, "/joingame")
 		}
+
 		return
 	})
 
@@ -90,21 +85,31 @@ func main() {
 		joincode := strings.ToUpper(c.Request.FormValue("code"))
 		joinname := strings.ToUpper(c.Request.FormValue("name"))
 
-		fmt.Println("Join code is " + joincode)
-
 		if lobbymanager.GetInstance().Contains(joincode) {
-			lobbymanager.GetInstance().AddUser(joincode, joinname)
+			//else create a new user
+			lobbymanager.GetInstance().AddUser(joincode, lobbymanager.User{Name: joinname})
 			assignUserCookie(joinname+","+joincode, c)
-			c.Redirect(302, "/ingame")
-
+			c.Redirect(302, "/ingame")		
 		} else {
 			c.Redirect(302, "/joingame")
+			return
 		}
 	})
 
+	router.POST("/leave", func(c *gin.Context) {
+		UserInfo := getCookieValue("UserInfo", c)
+		if UserInfo != "" {
+			UserName := strings.Split(UserInfo, ",")[0]
+			RoomCode := strings.Split(UserInfo, ",")[1]
+
+			//find the lobby
+			lobbymanager.GetInstance().RemoveUser(RoomCode, UserName)
+		}
+		assignUserCookie("", c)
+		c.Redirect(302, "/")
+	})
+
 	router.POST("/remake", func(c *gin.Context) {
-		//print lobbies for debugging
-		lobbymanager.GetInstance().PrintLobbies()
 		//remove current host from map
 		removeCodeFromMap(getCookieValue("HostInfo", c))
 		//reassign the host cookie to null
@@ -149,7 +154,7 @@ func createNewLobbyandAssign(c *gin.Context) *lobbymanager.Lobby {
 	return l
 }
 
-func removeCodeFromMap(code string){
+func removeCodeFromMap(code string) {
 	lobbymanager.GetInstance().RemoveLobby(code)
 }
 
